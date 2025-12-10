@@ -44,11 +44,11 @@ class KikerikiGame:
         event_calendar = []
 
         # Start-Event
-        self.record_event(event_calendar, 'start', deck, None)
+        self.record_event(event_calendar, 'starts', deck, None)
 
         while deck:
             throw = self.roll_dice()
-            self.record_event(event_calendar, 'roll_dice', deck, throw)
+            self.record_event(event_calendar, 'rolls die', deck, throw)
 
             # Smiley → Farbe der Karte übernehmen
             if throw == 'smiley':
@@ -57,17 +57,17 @@ class KikerikiGame:
             # Treffer?
             if throw in deck[0]:
                 deck[0].remove(throw)
-                self.record_event(event_calendar, 'hit', deck, throw)
+                self.record_event(event_calendar, 'hits', deck, throw)
 
             else:
-                self.record_event(event_calendar, 'miss', deck, throw)
+                self.record_event(event_calendar, 'misses', deck, throw)
                 self.next_player()
 
             # Karte vollständig?
             if len(deck[0]) == 0:
                 deck.pop(0)
                 self.scores[self.player] += 1
-                self.record_event(event_calendar, 'complete_card', deck, throw)
+                self.record_event(event_calendar, 'completed card', deck, throw)
 
         # Spielende
         self.record_event(event_calendar, 'end_game', deck, throw)
