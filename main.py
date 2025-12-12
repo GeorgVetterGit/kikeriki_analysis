@@ -8,7 +8,7 @@ pygame.init()
 CLOCK = pygame.time.Clock()
 FPS = 30
 
-CHANGE_TIME = 500  # milliseconds (3000)
+CHANGE_TIME = 2000  # milliseconds (3000)
 
 WIDTH, HEIGHT = 1200, 600
 COLORS = {
@@ -19,13 +19,46 @@ COLORS = {
 
 CARD_SIZE = 250
 SMALL_CARD_SIZE = 90
+SCS = SMALL_CARD_SIZE
 dice_size = 100
 smiley_size = 70
 dot_size = 50
 dice_color_size = 70
-guy_size = 70
+GUY_SIZE = 70
 hit_size = (100,50)
 miss_size = (100,50)
+
+CARD_NAMES = ['cat', 'dog', 'chicken', 'cow', 'horse', 'sheep']
+COLOR_NAMES = ['red', 'green', 'blue', 'yellow', 'purple']
+GUY_POS = [(445, 20), (505, 20), (565, 20), (625, 20), (685, 20)]
+
+OFFSET_Y = 10
+MID_ODD = HEIGHT // 2 - SCS // 2
+MID_EVEN = HEIGHT // 2 - SCS - OFFSET_Y // 2
+
+Y_POS_CARDS = {
+    1:[MID_ODD],
+    2:[MID_EVEN, 
+       MID_EVEN + OFFSET_Y + SCS],
+    3:[MID_ODD - OFFSET_Y - SCS, 
+       MID_ODD, 
+       MID_ODD + OFFSET_Y + SCS],
+    4:[MID_EVEN - OFFSET_Y - SCS, 
+       MID_EVEN, 
+       MID_EVEN + OFFSET_Y + SCS, 
+       MID_EVEN + 2*OFFSET_Y + 2*SCS],
+    5:[MID_ODD - 2*OFFSET_Y - 2*SCS, 
+       MID_ODD - OFFSET_Y - SCS, 
+       MID_ODD, 
+       MID_ODD + OFFSET_Y + SCS,
+       MID_ODD + 2*OFFSET_Y + 2*SCS],
+    6:[MID_EVEN - 2*OFFSET_Y - 2*SCS,
+       MID_EVEN - OFFSET_Y - SCS, 
+       MID_EVEN, 
+       MID_EVEN + OFFSET_Y + SCS, 
+       MID_EVEN + 2*OFFSET_Y + 2*SCS,
+       MID_EVEN + 3*OFFSET_Y + 3*SCS]
+}
 
 dot_dict = {}
 dice_dict = {}
@@ -51,17 +84,19 @@ class card():
             target_x = 360
             target_w = self.small_size
             target_h = self.small_size
+            target_y = Y_POS_CARDS[len(kids[0].won_cards)][kids[0].won_cards.index(self.no)]
         elif self.no in kids[1].won_cards:
             target_x = 750
             target_w = self.small_size
             target_h = self.small_size
+            target_y = Y_POS_CARDS[len(kids[1].won_cards)][kids[1].won_cards.index(self.no)]
         else:
             target_x = self.x_pos
             target_w = self.big_size
             target_h = self.big_size
+            target_y = self.y_pos
 
-
-        #self.y_pos  += (target_y - self.y_pos)  * self.animation_speed
+        self.y_pos  += (target_y - self.y_pos)  * self.animation_speed
         self.x_pos  += (target_x - self.x_pos)  * self.animation_speed
         self.w  += (target_w - self.w)  * self.animation_speed
         self.h  += (target_h - self.h)  * self.animation_speed
@@ -71,8 +106,8 @@ class card():
         img = pygame.transform.scale(self.image, (self.w, self.h))
         screen.blit(img, (self.x_pos, self.y_pos))
         
-card_names = ['cat', 'dog', 'chicken', 'cow', 'horse', 'sheep']
-card_list = [card(name, i) for i, name in enumerate(card_names)]
+
+card_list = [card(name, i) for i, name in enumerate(CARD_NAMES)]
 
 card_idx = 0
 complete = False
@@ -104,22 +139,35 @@ dice_dict['green'] = pygame.transform.scale(green_image, (dice_color_size, dice_
 dice_dict['red'] = pygame.transform.scale(red_image, (dice_color_size, dice_color_size))
 dice_dict['smiley'] = pygame.transform.scale(smiley_image, (smiley_size, smiley_size))
 
-# load guy images
-blue_guy_image = pygame.image.load("assets/blue_guy.png")
-green_guy_image = pygame.image.load("assets/green_guy.png")
-red_guy_image = pygame.image.load("assets/red_guy.png")
-yellow_guy_image = pygame.image.load("assets/yellow_guy.png")
-purple_guy_image = pygame.image.load("assets/purple_guy.png")
+class guy():
+    def __init__(self, color, pos):
+        self.color = color
+        self.x_pos = pos[0]
+        self.y_pos = pos[1]
+        self.pos = pos
+        self.image = pygame.image.load(f"assets/{self.color}_guy.png")
+        self.size = GUY_SIZE
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.animation_speed = 0.1
 
-def set_guy_pos():
-    guy_dict['blue'] = {'image': pygame.transform.scale(blue_guy_image, (guy_size, guy_size)), 'pos': (445, 20)}
-    guy_dict['green'] = {'image': pygame.transform.scale(green_guy_image, (guy_size, guy_size)), 'pos': (505, 20)}
-    guy_dict['red'] = {'image': pygame.transform.scale(red_guy_image, (guy_size, guy_size)), 'pos': (565, 20)}
-    guy_dict['yellow'] = {'image': pygame.transform.scale(yellow_guy_image, (guy_size, guy_size)), 'pos': (625, 20)}
-    guy_dict['purple'] = {'image': pygame.transform.scale(purple_guy_image, (guy_size, guy_size)), 'pos': (685, 20)}
-    return guy_dict
+    def update(self, event, card_colors):
+        target_x = self.x_pos
+        target_y = self.y_pos
+        if event['event'] == 'hits' and event['throw'] == self.color:
+            target_x = WIDTH // 2 - CARD_SIZE // 2 + 25 + card_colors.index(event['throw']) * 65
+            target_y = 350
+        elif event['event'] == 'completed card':
+            target_x = self.pos[0]
+            target_y = self.pos[1]
 
-guy_dict = set_guy_pos()
+        self.x_pos  += (target_x - self.x_pos)  * self.animation_speed
+        self.y_pos  += (target_y - self.y_pos)  * self.animation_speed
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.x_pos, self.y_pos))
+        
+for color, pos in zip(COLOR_NAMES, GUY_POS):
+    guy_dict[color] = guy(color, pos)
 
 
 class player():
@@ -162,7 +210,6 @@ class player():
             factor = 1.02 if self.marked else 1 + (self.sf/2)
         return self.base_x * factor
 
-
     def update(self, event, card_idx):
         self.marked = int(event['player']) == self.no
 
@@ -179,8 +226,6 @@ class player():
         if (event['event'] == 'completed card' or event['event'] == 'end_game') and event['player'] == self.no:
             if card_idx not in self.won_cards:
                 self.won_cards.append(card_idx)
-                print(self.won_cards)
-
 
     def draw(self, screen):
         if self.marked:
@@ -235,12 +280,14 @@ while running:
                 game = kg.KikerikiGame(no_players=2, n_cards=6)
                 event_idx = 0
                 event = game.event_calendar[event_idx]
+                kid_1 = player(1, 0, event['player'])
+                kid_2 = player(2, WIDTH - 380, event['player'])
                 card_idx = 0
                 complete = False
                 card_colors = event['deck'][0]
                 guy_dict = set_guy_pos()
                 throw_counter = 0
-                # reset game time
+                card_list = [card(name, i) for i, name in enumerate(CARD_NAMES)]
     
 
     # Update event index based on time
@@ -254,32 +301,24 @@ while running:
 
     # Update card index and colors if a card is completed
     if event['event'] == 'completed card' and not complete:
-        card_idx += 1
-        if card_idx > len(card_list):
-            card_idx -=1
-        else:
+        if card_idx < len(card_list) - 1:
+            card_idx +=1
             card_colors = event['deck'][0]
-            guy_dict = set_guy_pos()
+        else:
+            card_idx = len(card_list)
         complete = True
     elif event['event'] != 'completed card':
         complete = False
 
-    if event['event'] == 'end_game':
-        kid_1.update(event, card_idx)
-        kid_2.update(event, card_idx)
-    else:
-        kid_1.update(event, card_idx - 1)
-        kid_2.update(event, card_idx - 1)
+    kid_1.update(event, card_idx - 1)
+    kid_2.update(event, card_idx - 1)
 
     for c in card_list:
         c.update(event, [kid_1, kid_2])
 
-    # set guy position on card if hit
-    if event['event'] == 'hits':
-        guy_pos = guy_dict[event['throw']]['pos']
-        guy_dict[event['throw']]['pos'] = (WIDTH // 2 - CARD_SIZE // 2 + 25 + card_colors.index(event['throw']) * 65, 350)
+    for guy in guy_dict.keys():
+        guy_dict[guy].update(event, card_colors)
 
-    #pygame.draw.rect(screen, COLORS["background"], (0, 0, WIDTH, HEIGHT))
     screen.fill(COLORS["background"])
     screen.blit(background_image, (0, 0))
 
@@ -287,19 +326,14 @@ while running:
     kid_1.draw(screen)
     kid_2.draw(screen)
 
-    #Score display
-    player_1_score = font.render(str(event['scores'][0]), True, COLORS["text"])
-    screen.blit(player_1_score, (100, 20))
-    player_2_score = font.render(str(event['scores'][1]), True, COLORS["text"])
-    screen.blit(player_2_score, (1100, 20))
-
     # Display card
-    for ci in range(card_idx+1):
+    for ci in range(min(card_idx, len(card_list)-1),-1,-1):
         card_list[ci].draw(screen)
 
     # Display dots on card
-    for i, color in enumerate(card_colors):
-        screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65, 360))
+    if event['event'] != 'completed card' and event['event'] != 'end_game':
+        for i, color in enumerate(card_colors):
+            screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65, 360))
 
     if event['event'] != 'rolls die':
         throw_counter = 0
@@ -321,8 +355,9 @@ while running:
         screen.blit(miss_image, (WIDTH // 2 - dice_size // 2 + 150, 450))
 
     # Display guys
-    for guy in guy_dict.keys():
-        screen.blit(guy_dict[guy]['image'], guy_dict[guy]['pos'])
+    if event['event'] != 'end_game':
+        for guy in guy_dict.keys():
+            guy_dict[guy].draw(screen)
 
     # Display event details in the horizonatl middle of the screen
     y_offset = 560
