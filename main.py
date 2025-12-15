@@ -8,7 +8,7 @@ pygame.init()
 CLOCK = pygame.time.Clock()
 FPS = 30
 
-CHANGE_TIME = 2000  # milliseconds (3000)
+CHANGE_TIME = 1000  # milliseconds (3000)
 
 WIDTH, HEIGHT = 1200, 600
 COLORS = {
@@ -25,8 +25,6 @@ smiley_size = 70
 dot_size = 50
 dice_color_size = 70
 GUY_SIZE = 70
-hit_size = (100,50)
-miss_size = (100,50)
 
 CARD_NAMES = ['cat', 'dog', 'chicken', 'cow', 'horse', 'sheep']
 COLOR_NAMES = ['red', 'green', 'blue', 'yellow', 'purple']
@@ -78,8 +76,9 @@ class card():
         self.x_pos = WIDTH // 2 - self.big_size // 2
         self.y_pos = 180
         self.animation_speed = 0.1
+        self.bounce_speed = 0.3
 
-    def update(self, event, kids):
+    def update(self, kids):
         if self.no in kids[0].won_cards:
             target_x = 360
             target_w = self.small_size
@@ -101,7 +100,6 @@ class card():
         self.w  += (target_w - self.w)  * self.animation_speed
         self.h  += (target_h - self.h)  * self.animation_speed
             
-
     def draw(self, screen):
         img = pygame.transform.scale(self.image, (self.w, self.h))
         screen.blit(img, (self.x_pos, self.y_pos))
@@ -148,7 +146,7 @@ class guy():
         self.image = pygame.image.load(f"assets/{self.color}_guy.png")
         self.size = GUY_SIZE
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
-        self.animation_speed = 0.1
+        self.animation_speed = 0.3
 
     def update(self, event, card_colors):
         target_x = self.x_pos
@@ -237,13 +235,6 @@ class player():
         screen.blit(scaled, (self.x_pos, self.y_pos))
 
 
-
-# load hit and miss
-hit_image = pygame.image.load("assets/hit.png")
-hit_image = pygame.transform.scale(hit_image, hit_size)
-miss_image = pygame.image.load("assets/miss.png")
-miss_image = pygame.transform.scale(miss_image, miss_size)
-
 # load background
 background_image = pygame.image.load("assets/background.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
@@ -267,6 +258,10 @@ mid_font = pygame.font.Font(None, 30)
 throw_counter = 0
 
 last_event_change = 0
+max_reached = False
+d_size = dot_size
+dice_size_t = dice_size
+dice_color_size_n = dice_color_size
 
 # Main loop
 running = True
@@ -285,9 +280,13 @@ while running:
                 card_idx = 0
                 complete = False
                 card_colors = event['deck'][0]
-                guy_dict = set_guy_pos()
                 throw_counter = 0
                 card_list = [card(name, i) for i, name in enumerate(CARD_NAMES)]
+                max_reached = False
+                last_event_change = 0
+                d_size = dot_size
+                dice_size_t = dice_size
+                dice_color_size_n = dice_color_size
     
 
     # Update event index based on time
@@ -314,7 +313,7 @@ while running:
     kid_2.update(event, card_idx - 1)
 
     for c in card_list:
-        c.update(event, [kid_1, kid_2])
+        c.update([kid_1, kid_2])
 
     for guy in guy_dict.keys():
         guy_dict[guy].update(event, card_colors)
@@ -330,52 +329,63 @@ while running:
     for ci in range(min(card_idx, len(card_list)-1),-1,-1):
         card_list[ci].draw(screen)
 
+
+    # Update dot size for hits event
+    if not max_reached and event['event'] == 'hits':
+        target_size = (1.2 * dot_size)
+        t_size_dice = dice_size * 1.2
+        target_d_d_size = dice_color_size * 1.3
+    else:
+        target_size = dot_size
+        t_size_dice = dice_size
+        target_d_d_size = 70
+    
+    d_size += (target_size - d_size) * 0.1
+    dice_size_t += (t_size_dice - dice_size_t) * 0.1
+    dice_color_size_n += (target_d_d_size - dice_color_size_n) * 0.1
+
+    if d_size >= 1.1 * dot_size:
+        max_reached = True
+
+    if event['throw'] is not None:
+        dot_dict[event['throw']] = pygame.transform.scale(eval(f"{event['throw']}_image"), (int(d_size), int(d_size)))
+        dice_dict[event['throw']] = pygame.transform.scale(eval(f"{event['throw']}_image"), (int(dice_color_size_n), int(dice_color_size_n)))
+
+    dice_image = pygame.transform.scale(dice_image, (int(dice_size_t), int(dice_size_t)))
+
+    if event['event'] != 'hits':
+        max_reached = False
+
+
     # Display dots on card
     if event['event'] != 'completed card' and event['event'] != 'end_game':
         for i, color in enumerate(card_colors):
-            screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65, 360))
+            if color == event['throw'] and event['event'] == 'hits':
+                screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65 - (d_size - dot_size)//2, 360 - (d_size - dot_size)//2))
+            else:
+                screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65, 360))
 
     if event['event'] != 'rolls die':
         throw_counter = 0
 
     # Display dice
-    screen.blit(dice_image, (WIDTH // 2 - dice_size // 2, 450))
-    if event['event'] == 'rolls die' and throw_counter < 30:
+    screen.blit(dice_image, (WIDTH // 2 - int(dice_size_t) // 2, 450 - (dice_size_t - dice_size)//2))
+    if event['event'] == 'rolls die' and throw_counter < 20:
         #show random dice color
         c = random.choice(list(dice_dict.keys()))
-        screen.blit(dice_dict[c], (WIDTH // 2 - dice_size // 2 + 15, 465))
+        screen.blit(dice_dict[c], (WIDTH // 2 - int(dice_size_t) // 2 + 15, 465))
         throw_counter += 1
     elif event['throw'] is not None:
-        screen.blit(dice_dict[event['throw']], (WIDTH // 2 - dice_size // 2 + 15, 465))
-
-    # Display hit or miss
-    if event['event'] == 'hits':
-        screen.blit(hit_image, (WIDTH // 2 - dice_size // 2 + 150, 450))
-    elif event['event'] == 'misses':
-        screen.blit(miss_image, (WIDTH // 2 - dice_size // 2 + 150, 450))
+        screen.blit(dice_dict[event['throw']], (WIDTH // 2 - int(dice_size_t) // 2 + 15, 465 - (dice_size_t - dice_size)//2))
 
     # Display guys
     if event['event'] != 'end_game':
         for guy in guy_dict.keys():
             guy_dict[guy].draw(screen)
 
-    # Display event details in the horizonatl middle of the screen
-    y_offset = 560
-    if event['event'] != 'end_game':
-        t_str = f'Player {int(event['player']) + 1} {event['event']}{' and gets '+event['throw']+'.' if event['event'] == 'rolls die' else "."}{' He chooses '+game.event_calendar[event_idx+1]['throw']+'.' if event['throw'] == 'smiley' else ""}'
-    else:
-        t_str = 'Game over!'
-    text = mid_font.render(t_str, True, COLORS["text"])
-
-    #get length of text to center text
-    text_width = text.get_width()
-    text_x = WIDTH // 2 - text_width // 2
-    screen.blit(text, (text_x, y_offset))
-
     # print restart in bottom right corner
     text_restart = mid_font.render(f"Press (r) to restart", True, COLORS["text"])
-    screen.blit(text_restart, (WIDTH - 200, y_offset))
-    
+    screen.blit(text_restart, (WIDTH - 200, 560))
 
     pygame.display.flip()  # Update the display
 
