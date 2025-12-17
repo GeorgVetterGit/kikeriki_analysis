@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Project Report</title>
+  <meta name="description" content="Project Report." />
+  <style>
+    :root{
+      --accent:#2563eb;
+      --muted:#6b7280;
+      --bg:#f8fafc;
+      --card:#ffffff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:#0f172a;line-height:1.45}
+    .container{max-width:1100px;margin:28px auto;padding:20px}
+
+    .hero{position:relative;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(2,6,23,0.08)}
+    .hero img{width:100%;height:320px;object-fit:cover;display:block}
+    .hero video{width:100%;height:320px;object-fit:cover;display:block}
+    .hero .overlay{position:absolute;left:0;right:0;bottom:0;padding:18px;background:linear-gradient(180deg,rgba(2,6,23,0) 0%, rgba(2,6,23,0.45) 55%, rgba(2,6,23,0.6) 100%);color:#fff}
+    .hero h1{margin:0;font-size:clamp(20px,3.6vw,30px)}
+    .meta{font-size:14px;opacity:.95;margin-top:6px}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:20px;margin-top:20px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}.hero img{height:220px}.hero video{height:220px}}
+
+    .card{background:var(--card);padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(5,10,25,0.04)}
+    h2{margin:0 0 10px 0}
+    p{margin:0 0 12px 0;color:var(--muted)}
+    ul{margin:0 0 12px 20px;color:var(--muted)}
+
+    .screenshots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+    .screenshots img{width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);object-fit:cover}
+
+    .sim-list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    @media (max-width:520px){.sim-list{grid-template-columns:1fr}}
+    .sim{display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;border:1px solid #e6edf6}
+    .sim .thumb{width:64px;height:48px;background:linear-gradient(135deg,#eaf2ff,#ffffff);display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:600;color:var(--accent)}
+    .sim a{color:var(--accent);font-weight:600;text-decoration:none}
+    .sim small{display:block;color:var(--muted)}
+
+    .tags{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+    .tag{background:#e0e7ff;color:#1e40af;padding:4px 10px;border-radius:9999px;font-size:13px;font-weight:500}
+
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:14px}
+
+    .links{margin-top:20px;display:flex;gap:12px}
+    .btn{display:inline-block;padding:8px 12px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.12)}
+
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:18px;z-index:60}
+    .modal.open{display:flex}
+    .modal .frame{width:100%;max-width:980px;background:var(--card);border-radius:10px;overflow:hidden}
+    .modal .frame header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #eef2f7}
+    .modal iframe{width:100%;height:600px;border:0}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero" role="img" aria-label="Bannerbereich des Projekts">
+      <video autoplay loop muted playsinline poster="https://via.placeholder.com/1400x320.png?text=Video+Fallback" src="assets/kikeriki_ingame.mov"></video>
+      <div class="overlay">
+        <h1>Kikeriki!</h1>
+        <div class="meta">Project Report</div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <main>
+        <div class="card">
+          <h2>Introduction</h2>
+          <p>This project investigates the statistical fairness of KIKERIKI, a children’s board game by HABA (2001). Although designed for young players, the game contains probabilistic mechanics that allow for quantitative analysis. The objective of this study was to determine whether the game provides equal winning opportunities for all players, regardless of turn order, rule variants, or game configuration.</p>
+
+          <h2>Game Overview</h2>
+          <p>KIKERIKI is a dice-based card collection game using five coloured playing figures, animal cards marked with three coloured dots, and a colour die including a joker symbol. Players roll the die to place matching figures on the active card. Correct rolls allow continued play, while incorrect rolls pass the turn. A card is won when all required colours are placed.</p>
+
+          <div class="screenshots">
+            <img src="assets/Screenshot_1.png" alt="Projekt-Screenshot 1">
+          </div>
+
+          <h2>Research Question</h2>
+          <p>The study addressed the following questions:<br>
+            <ul>  
+              <li>Do all players have equal chances of winning cards?</li>
+              <li>Does allowing a player to continue after winning a card affect fairness?</li>
+              <li>Does the starting player have an advantage?</li>
+              <li>How do the number of players and cards influence balance?</li>
+            </ul>
+            </p>
+
+          <h2>Methodology</h2>
+          <p>A Monte Carlo simulation approach was used, running 10,000 simulated games per condition. The simulations varied:<br>
+            <ul>
+              <li>Number of players (2–5)</li>
+              <li>Number of cards (2–18)</li>
+              <li>Turn rules (player continues after winning vs. turn passes)</li>
+            </ul>
+            </p>
+          <p>
+            All players were assumed to behave identically, with outcomes determined solely by chance. Statistical significance was evaluated using two-sample t-tests.</p>
+
+          <h2>Results</h2>
+          <p>
+            <ul>
+              <li>Player Position: No significant advantage was found for any player position across all configurations (p > 0.1).</li>
+              <li>Rule Variants: No significant difference was found between the two turn-taking strategies (p ≈ 0.22).</li>
+              <li>Starting Position: No consistent advantage was observed for the starting player under either rule set (p > 0.1).</li>
+              <li>Game Parameters: Across all tested combinations of players and cards, fewer than 1% of simulations showed significant deviations, attributed to random variation.</li>
+            </ul>
+            </p>
+            <p>
+            Overall, the results indicate strong statistical fairness across all tested conditions.</p>
+
+          <div class="screenshots">
+            <img src="assets/Screenshot_2.png" alt="Projekt-Screenshot 1">
+          </div>
+
+          <h2>Discussion</h2>
+          <p>The game’s balance is supported by its design: evenly distributed colour requirements, the use of a joker to reduce bad-luck streaks, and independent card rounds prevent systematic advantages. While short-term winning streaks can occur, they do not meaningfully affect long-term outcomes.</p>
+
+          <h2>Conclusion</h2>
+          <p>The analysis demonstrates that KIKERIKI is a statistically fair and robust game. It remains balanced across different player counts, rule variations, and game lengths. The findings confirm that the game offers equal winning opportunities for all players while maintaining an engaging and enjoyable playing experience for both children and adults.</p>
+
+          <div class="tags">
+            <span class="tag">Simulation</span>
+            <span class="tag">Data Visualisation</span>
+            <span class="tag">Game</span>
+          </div>
+
+          <div class="links">
+            <a class="btn ghost" href="https://github.com/GeorgVetterGit/kikeriki_analysis" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </main>
+
+      <aside>
+        <div class="card">
+          <h2>Test the Game-Simulation Yourself</h2>
+          <p>The game simulation is available online and can be tested directly.</p>
+
+          <div class="sim-list">
+            <article class="sim">
+              <div class="thumb">Sim</div>
+              <div>
+                <a href="#" data-src="https://github.com/GeorgVetterGit/kikeriki_analysis/tree/main/build/web/index.html" class="open-sim">Kikeriki Game</a>
+                <small>Explore the game simulation.</small>
+              </div>
+            </article>
+
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      © 2025 Georg Vetter. All rights reserved.
+    </footer>
+  </div>
+
+  <div id="simModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="frame" role="document">
+      <header>
+        <strong id="simTitle">Simulation</strong>
+        <div>
+          <button id="closeModal" class="btn ghost">Schließen</button>
+          <a id="openInTab" class="btn" href="#" target="_blank" rel="noopener">In neuem Tab öffnen</a>
+        </div>
+      </header>
+      <iframe id="simFrame" src="about:blank" title="Simulation-Vorschau"></iframe>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.open-sim').forEach(el=>{
+      el.addEventListener('click', function(e){
+        e.preventDefault();
+        const src = this.getAttribute('data-src');
+        if(!src){ window.open(this.href || '#','_blank'); return; }
+        const modal = document.getElementById('simModal');
+        const frame = document.getElementById('simFrame');
+        const title = document.getElementById('simTitle');
+        const openInTab = document.getElementById('openInTab');
+        title.textContent = this.textContent || 'Simulation';
+        frame.src = src;
+        openInTab.href = src;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden','false');
+      })
+    })
+    document.getElementById('closeModal').addEventListener('click', ()=>{
+      const modal = document.getElementById('simModal');
+      const frame = document.getElementById('simFrame');
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden','true');
+      frame.src = 'about:blank';
+    })
+    document.getElementById('simModal').addEventListener('click', (ev)=>{
+      if(ev.target.id === 'simModal') document.getElementById('closeModal').click();
+    })
+  </script>
+</body>
+</html>
