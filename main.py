@@ -1,5 +1,6 @@
 import random
 import pygame
+import asyncio
 import kikeriki_game as kg
 
 # Initialize Pygame
@@ -265,128 +266,135 @@ dice_color_size_n = dice_color_size
 
 # Main loop
 running = True
-while running:
-    CLOCK.tick(FPS)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r:
-                game = kg.KikerikiGame(no_players=2, n_cards=6)
-                event_idx = 0
-                event = game.event_calendar[event_idx]
-                kid_1 = player(1, 0, event['player'])
-                kid_2 = player(2, WIDTH - 380, event['player'])
-                card_idx = 0
-                complete = False
+
+async def main():
+    global running, event_idx, event, card_idx, complete, card_colors
+    global throw_counter, last_event_change, max_reached, d_size, dice_size_t, dice_color_size_n, game
+    global kid_1, kid_2, screen, clock, FPS, WIDTH, HEIGHT, background_image, CARD_SIZE, dot_dict, dice_dict, guy_dict, CHANGE_TIME, dice_image, CARD_NAMES, COLOR_NAMES, GUY_POS, dot_size, dice_color_size, smiley_size, GUY_SIZE, SCS, OFFSET_Y, MID_ODD, MID_EVEN, Y_POS_CARDS, card_list
+    while running:
+        CLOCK.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    game = kg.KikerikiGame(no_players=2, n_cards=6)
+                    event_idx = 0
+                    event = game.event_calendar[event_idx]
+                    kid_1 = player(1, 0, event['player'])
+                    kid_2 = player(2, WIDTH - 380, event['player'])
+                    card_idx = 0
+                    complete = False
+                    card_colors = event['deck'][0]
+                    throw_counter = 0
+                    card_list = [card(name, i) for i, name in enumerate(CARD_NAMES)]
+                    max_reached = False
+                    last_event_change = 0
+                    d_size = dot_size
+                    dice_size_t = dice_size
+                    dice_color_size_n = dice_color_size
+        
+
+        # Update event index based on time
+        if pygame.time.get_ticks() - last_event_change >= CHANGE_TIME:
+            last_event_change = pygame.time.get_ticks()
+            event_idx += 1
+            if event_idx >= len(game.event_calendar):
+                event_idx = len(game.event_calendar) - 1
+
+        event = game.event_calendar[event_idx]
+
+        # Update card index and colors if a card is completed
+        if event['event'] == 'completed card' and not complete:
+            if card_idx < len(card_list) - 1:
+                card_idx +=1
                 card_colors = event['deck'][0]
-                throw_counter = 0
-                card_list = [card(name, i) for i, name in enumerate(CARD_NAMES)]
-                max_reached = False
-                last_event_change = 0
-                d_size = dot_size
-                dice_size_t = dice_size
-                dice_color_size_n = dice_color_size
-    
-
-    # Update event index based on time
-    if pygame.time.get_ticks() - last_event_change >= CHANGE_TIME:
-        last_event_change = pygame.time.get_ticks()
-        event_idx += 1
-        if event_idx >= len(game.event_calendar):
-            event_idx = len(game.event_calendar) - 1
-
-    event = game.event_calendar[event_idx]
-
-    # Update card index and colors if a card is completed
-    if event['event'] == 'completed card' and not complete:
-        if card_idx < len(card_list) - 1:
-            card_idx +=1
-            card_colors = event['deck'][0]
-        else:
-            card_idx = len(card_list)
-        complete = True
-    elif event['event'] != 'completed card':
-        complete = False
-
-    kid_1.update(event, card_idx - 1)
-    kid_2.update(event, card_idx - 1)
-
-    for c in card_list:
-        c.update([kid_1, kid_2])
-
-    for guy in guy_dict.keys():
-        guy_dict[guy].update(event, card_colors)
-
-    screen.fill(COLORS["background"])
-    screen.blit(background_image, (0, 0))
-
-    # Display kids
-    kid_1.draw(screen)
-    kid_2.draw(screen)
-
-    # Display card
-    for ci in range(min(card_idx, len(card_list)-1),-1,-1):
-        card_list[ci].draw(screen)
-
-
-    # Update dot size for hits event
-    if not max_reached and event['event'] == 'hits':
-        target_size = (1.2 * dot_size)
-        t_size_dice = dice_size * 1.2
-        target_d_d_size = dice_color_size * 1.3
-    else:
-        target_size = dot_size
-        t_size_dice = dice_size
-        target_d_d_size = 70
-    
-    d_size += (target_size - d_size) * 0.1
-    dice_size_t += (t_size_dice - dice_size_t) * 0.1
-    dice_color_size_n += (target_d_d_size - dice_color_size_n) * 0.1
-
-    if d_size >= 1.1 * dot_size:
-        max_reached = True
-
-    if event['throw'] is not None:
-        dot_dict[event['throw']] = pygame.transform.scale(eval(f"{event['throw']}_image"), (int(d_size), int(d_size)))
-        dice_dict[event['throw']] = pygame.transform.scale(eval(f"{event['throw']}_image"), (int(dice_color_size_n), int(dice_color_size_n)))
-
-    dice_image = pygame.transform.scale(dice_image, (int(dice_size_t), int(dice_size_t)))
-
-    if event['event'] != 'hits':
-        max_reached = False
-
-
-    # Display dots on card
-    if event['event'] != 'completed card' and event['event'] != 'end_game':
-        for i, color in enumerate(card_colors):
-            if color == event['throw'] and event['event'] == 'hits':
-                screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65 - (d_size - dot_size)//2, 360 - (d_size - dot_size)//2))
             else:
-                screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65, 360))
+                card_idx = len(card_list)
+            complete = True
+        elif event['event'] != 'completed card':
+            complete = False
 
-    if event['event'] != 'rolls die':
-        throw_counter = 0
+        kid_1.update(event, card_idx - 1)
+        kid_2.update(event, card_idx - 1)
 
-    # Display dice
-    screen.blit(dice_image, (WIDTH // 2 - int(dice_size_t) // 2, 450 - (dice_size_t - dice_size)//2))
-    if event['event'] == 'rolls die' and throw_counter < 20:
-        #show random dice color
-        c = random.choice(list(dice_dict.keys()))
-        screen.blit(dice_dict[c], (WIDTH // 2 - int(dice_size_t) // 2 + 15, 465))
-        throw_counter += 1
-    elif event['throw'] is not None:
-        screen.blit(dice_dict[event['throw']], (WIDTH // 2 - int(dice_size_t) // 2 + 15, 465 - (dice_size_t - dice_size)//2))
+        for c in card_list:
+            c.update([kid_1, kid_2])
 
-    # Display guys
-    if event['event'] != 'end_game':
         for guy in guy_dict.keys():
-            guy_dict[guy].draw(screen)
+            guy_dict[guy].update(event, card_colors)
 
-    # print restart in bottom right corner
-    text_restart = mid_font.render(f"Press (r) to restart", True, COLORS["text"])
-    screen.blit(text_restart, (WIDTH - 200, 560))
+        screen.fill(COLORS["background"])
+        screen.blit(background_image, (0, 0))
 
-    pygame.display.flip()  # Update the display
+        # Display kids
+        kid_1.draw(screen)
+        kid_2.draw(screen)
 
-pygame.quit()
+        # Display card
+        for ci in range(min(card_idx, len(card_list)-1),-1,-1):
+            card_list[ci].draw(screen)
+
+
+        # Update dot size for hits event
+        if not max_reached and event['event'] == 'hits':
+            target_size = (1.2 * dot_size)
+            t_size_dice = dice_size * 1.2
+            target_d_d_size = dice_color_size * 1.3
+        else:
+            target_size = dot_size
+            t_size_dice = dice_size
+            target_d_d_size = 70
+        
+        d_size += (target_size - d_size) * 0.1
+        dice_size_t += (t_size_dice - dice_size_t) * 0.1
+        dice_color_size_n += (target_d_d_size - dice_color_size_n) * 0.1
+
+        if d_size >= 1.1 * dot_size:
+            max_reached = True
+
+        if event['throw'] is not None:
+            dot_dict[event['throw']] = pygame.transform.scale(eval(f"{event['throw']}_image"), (int(d_size), int(d_size)))
+            dice_dict[event['throw']] = pygame.transform.scale(eval(f"{event['throw']}_image"), (int(dice_color_size_n), int(dice_color_size_n)))
+
+        dice_image = pygame.transform.scale(dice_image, (int(dice_size_t), int(dice_size_t)))
+
+        if event['event'] != 'hits':
+            max_reached = False
+
+
+        # Display dots on card
+        if event['event'] != 'completed card' and event['event'] != 'end_game':
+            for i, color in enumerate(card_colors):
+                if color == event['throw'] and event['event'] == 'hits':
+                    screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65 - (d_size - dot_size)//2, 360 - (d_size - dot_size)//2))
+                else:
+                    screen.blit(dot_dict[color], (WIDTH // 2 - CARD_SIZE // 2 + 35 + i * 65, 360))
+
+        if event['event'] != 'rolls die':
+            throw_counter = 0
+
+        # Display dice
+        screen.blit(dice_image, (WIDTH // 2 - int(dice_size_t) // 2, 450 - (dice_size_t - dice_size)//2))
+        if event['event'] == 'rolls die' and throw_counter < 20:
+            #show random dice color
+            c = random.choice(list(dice_dict.keys()))
+            screen.blit(dice_dict[c], (WIDTH // 2 - int(dice_size_t) // 2 + 15, 465))
+            throw_counter += 1
+        elif event['throw'] is not None:
+            screen.blit(dice_dict[event['throw']], (WIDTH // 2 - int(dice_size_t) // 2 + 15, 465 - (dice_size_t - dice_size)//2))
+
+        # Display guys
+        if event['event'] != 'end_game':
+            for guy in guy_dict.keys():
+                guy_dict[guy].draw(screen)
+
+        # print restart in bottom right corner
+        text_restart = mid_font.render(f"Press (r) to restart", True, COLORS["text"])
+        screen.blit(text_restart, (WIDTH - 200, 560))
+
+        pygame.display.flip()  # Update the display
+
+        await asyncio.sleep(0)
+
+asyncio.run(main())
